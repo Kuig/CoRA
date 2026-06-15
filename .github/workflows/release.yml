@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag name for the release (e.g., v0.1.0)'
+        required: true
+        type: string
 
 jobs:
   release:
@@ -32,5 +38,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: coreaid.vsix
+          tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
