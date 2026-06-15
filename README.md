@@ -41,6 +41,7 @@ CoRA has an optional dependency called **TextConverter**. It is a lightweight py
   - **Response Delay (1s - 10s)**: Customize the wait time before CoRA analyzes your text once you stop writing.
   - Easily configure web search sources, max results, and PDF options; everything is persistently saved in the local `project_settings.json`.
 - **Decent Performance & Vector Caching**: Integrated binary vector caching (via automatic Base64 encoding) guarantees near-instant loading times. Vectors are saved in the `.cora/cache.json` file along with the active model's name. If you change the model in VS Code settings, CoRA automatically invalidates the cache and recalculates the vectors in real-time without needing to restart the IDE.
+- **Auto-Update Checker & GitHub Releases Automation**: Automatically checks GitHub Releases on startup to notify you when a new version of CoRA is available. Features a pre-configured GitHub Actions workflow that automatically packages and publishes `.vsix` binaries to new GitHub Releases when version tags (e.g. `v0.1.0`) are pushed.
 
 ---
 
@@ -62,6 +63,7 @@ CoRA has an optional dependency called **TextConverter**. It is a lightweight py
       - `cora.textconverterExtractHtml`: If active, extracts only the main content from HTML pages (default: true).
       - `cora.stripLinksAndImages`: If active, strips Markdown links (keeping only the link text) and removes Markdown images from the converted source documents (default: true).
       - `cora.filterTitles`: If active, excludes headings/titles (lines starting with one or more `#`) from the Smart Context suggestions (default: true).
+      - `cora.autoOpenPanel`: If active, automatically opens the CoRA side panel in the background when conditions are met (e.g., when opening a Markdown or LaTeX file in a workspace containing a `Sources` folder). If disabled, you can open the panel manually via the Command Palette (`Ctrl+Shift+P` -> `CoRA: Open Smart Context Panel`) (default: true).
 2. **Workspace Configuration**
    - Open a project in VS Code.
    - Create a folder named `Sources` in the root directory of your workspace.

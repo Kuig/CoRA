@@ -264,8 +264,14 @@ export async function activate(context: vscode.ExtensionContext) {
     });
 
     // Register command to open UI
-    let openPanelCommand = vscode.commands.registerCommand('cora.openPanel', () => {
+    let openPanelCommand = vscode.commands.registerCommand('cora.openPanel', async () => {
         try {
+            if (!fileManager.isInitialized()) {
+                await fileManager.initialize();
+                if (webviewManager) {
+                    webviewManager.sendInitialState();
+                }
+            }
             webviewManager.show();
         } catch (err: any) {
             logError(`Failed to open panel: ${err?.message || err}`);
@@ -279,12 +285,25 @@ export async function activate(context: vscode.ExtensionContext) {
         if (!editor) {
             return;
         }
+
+        const settings = settingsManager.getSettings();
+        const autoOpen = settings.autoOpenPanel ?? vscode.workspace.getConfiguration('cora').get<boolean>('autoOpenPanel') ?? true;
+        if (!autoOpen) {
+            return;
+        }
+
         const lang = editor.document.languageId;
         if (lang === 'markdown' || lang === 'tex' || lang === 'latex') {
             if (workspaceFolders) {
                 const sourcesUri = vscode.Uri.joinPath(workspaceFolders[0].uri, 'Sources');
                 try {
                     await vscode.workspace.fs.stat(sourcesUri);
+                    if (!fileManager.isInitialized()) {
+                        await fileManager.initialize();
+                        if (webviewManager) {
+                            webviewManager.sendInitialState();
+                        }
+                    }
                     webviewManager.show(true); // Open in background
                 } catch {
                     // Sources folder does not exist, ignore
@@ -322,6 +341,15 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // Listen for configuration changes
     context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(async (e) => {
+        if (e.affectsConfiguration('cora.autoOpenPanel')) {
+            try {
+                const autoOpen = vscode.workspace.getConfiguration('cora').get<boolean>('autoOpenPanel') ?? true;
+                settingsManager.getSettings().autoOpenPanel = autoOpen;
+            } catch (err: any) {
+                logError(`Failed to apply autoOpenPanel change: ${err?.message || err}`);
+            }
+        }
+
         if (e.affectsConfiguration('cora.filterTitles')) {
             try {
                 const filterTitles = vscode.workspace.getConfiguration('cora').get<boolean>('filterTitles') ?? true;

@@ -19,6 +19,7 @@ export class ProjectSettings {
     public embeddingsModel?: string;
     public ollamaPort?: number;
     public filterTitles?: boolean;
+    public autoOpenPanel?: boolean;
 
     constructor(data?: Partial<ProjectSettings>) {
         this.similarityThreshold = data?.similarityThreshold ?? 0.43;
@@ -32,12 +33,13 @@ export class ProjectSettings {
         this.pdfImageHandling = data?.pdfImageHandling ?? 'discard';
         this.searchTopNKeywords = data?.searchTopNKeywords ?? 5;
         this.textconverterPath = data?.textconverterPath ?? '';
-        this.stripLinksAndImages = data?.stripLinksAndImages ?? true;
-        this.textconverterCodeParsing = data?.textconverterCodeParsing ?? true;
-        this.textconverterExtractHtml = data?.textconverterExtractHtml ?? true;
+        this.stripLinksAndImages = data?.stripLinksAndImages;
+        this.textconverterCodeParsing = data?.textconverterCodeParsing;
+        this.textconverterExtractHtml = data?.textconverterExtractHtml;
         this.embeddingsModel = data?.embeddingsModel;
         this.ollamaPort = data?.ollamaPort;
-        this.filterTitles = data?.filterTitles ?? true;
+        this.filterTitles = data?.filterTitles;
+        this.autoOpenPanel = data?.autoOpenPanel;
     }
 
     /**

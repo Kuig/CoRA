@@ -41,6 +41,11 @@
           "default": true,
           "markdownDescription": "If active, excludes headers/titles (lines starting with one or more `#`) from the suggested results in the Smart Context panel."
         },
+        "cora.autoOpenPanel": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Automatically open the CoRA side panel when conditions are met (e.g., when opening a Markdown or LaTeX file in a workspace containing a `Sources` folder).\n\nIf disabled, you can open the panel manually via the Command Palette (`Ctrl+Shift+P` -> `CoRA: Open Smart Context Panel`)."
+        },
         "cora.textconverterPath": {
           "type": "string",
           "default": "",

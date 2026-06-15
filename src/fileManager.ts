@@ -165,6 +165,7 @@ export class FileManager {
     private _cache: VectorCache = new VectorCache();
     private _processingCount = 0;
     private _activeModel = 'bge-m3';
+    private _isInitialized = false;
 
     public onSourcesChanged?: () => void | Promise<void>;
 
@@ -173,6 +174,10 @@ export class FileManager {
         this._settingsManager = settingsManager;
         this._documentConverter = documentConverter;
         // The logger dynamically updates status, so we ignore onStatusChange and log directly.
+    }
+
+    public isInitialized(): boolean {
+        return this._isInitialized;
     }
 
     private _updateStatus() {
@@ -188,6 +193,10 @@ export class FileManager {
      * and triggers a differential update of the RAG engine.
      */
     public async initialize() {
+        if (this._isInitialized) {
+            return;
+        }
+
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (!workspaceFolders || workspaceFolders.length === 0) {
             logWarning('No workspace folder open. CoRA deactivated.');
@@ -205,6 +214,7 @@ export class FileManager {
 
         try {
             await vscode.workspace.fs.stat(this._sourcesUri);
+            this._isInitialized = true;
             logInfo('Sources folder found. Starting file indexing...');
             
             try {
@@ -218,8 +228,7 @@ export class FileManager {
             this._setupWatcher();
 
         } catch (error) {
-            logWarning('Sources folder not found. Waiting for folder creation...');
-            this._setupRootWatcher(rootUri);
+            // Silence! Remaining completely silent when the Sources folder is missing.
         }
     }
 
