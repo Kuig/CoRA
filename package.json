@@ -1,5 +1,6 @@
 {
   "name": "coreaid",
+  "publisher": "Kuig",
   "displayName": "CoRA - Context Retrieval Aid",
   "description": "RAG-based augmented-writing extension",
   "version": "0.1.0",

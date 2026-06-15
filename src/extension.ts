@@ -256,6 +256,9 @@ export async function activate(context: vscode.ExtensionContext) {
         if (webviewManager) {
             webviewManager.sendInitialState();
         }
+        checkForUpdates(context).catch(err => {
+            logWarning(`Update checker encountered an error: ${err?.message || err}`);
+        });
     }).catch(err => {
         logError(`Initialization failure: ${err?.message || err}`);
     });
@@ -431,6 +434,73 @@ function extractCurrentParagraph(document: vscode.TextDocument, position: vscode
     const endPos = new vscode.Position(endLine, document.lineAt(endLine).text.length);
     
     return document.getText(new vscode.Range(startPos, endPos)).trim();
+}
+
+/**
+ * Checks GitHub for newer versions of the extension.
+ */
+async function checkForUpdates(context: vscode.ExtensionContext) {
+    try {
+        const currentVersion = context.extension.packageJSON.version;
+        if (!currentVersion) {
+            return;
+        }
+
+        logAction('Checking for extension updates on GitHub...');
+        const response = await fetch('https://api.github.com/repos/Kuig/CoRA/releases/latest', {
+            headers: {
+                'User-Agent': 'vscode-cora-extension'
+            }
+        });
+
+        if (!response.ok) {
+            logWarning(`GitHub update check returned status ${response.status}: ${response.statusText}`);
+            return;
+        }
+
+        const data = await response.json() as any;
+        if (!data || !data.tag_name) {
+            return;
+        }
+
+        const latestVersion = data.tag_name;
+        const releaseUrl = data.html_url || 'https://github.com/Kuig/CoRA/releases';
+
+        if (isNewerVersion(currentVersion, latestVersion)) {
+            logInfo(`A new version of CoRA (${latestVersion}) is available! Current: ${currentVersion}`);
+            vscode.window.showInformationMessage(
+                `CoRA: A new version (${latestVersion}) is available! Current: ${currentVersion}.`,
+                'Download Update'
+            ).then(selection => {
+                if (selection === 'Download Update') {
+                    vscode.env.openExternal(vscode.Uri.parse(releaseUrl));
+                }
+            });
+        } else {
+            logSuccess(`CoRA is up to date (version ${currentVersion}).`);
+        }
+    } catch (e: any) {
+        logWarning(`Failed to check for CoRA updates: ${e?.message || e}`);
+    }
+}
+
+/**
+ * SemVer comparison helper: returns true if latest is strictly greater than current.
+ */
+function isNewerVersion(current: string, latest: string): boolean {
+    const curParts = current.replace(/^v/i, '').split('.').map(Number);
+    const latParts = latest.replace(/^v/i, '').split('.').map(Number);
+    for (let i = 0; i < Math.max(curParts.length, latParts.length); i++) {
+        const curPart = curParts[i] || 0;
+        const latPart = latParts[i] || 0;
+        if (latPart > curPart) {
+            return true;
+        }
+        if (curPart > latPart) {
+            return false;
+        }
+    }
+    return false;
 }
 
 export function deactivate() {
