@@ -1,0 +1,96 @@
+{
+  "name": "coreaid",
+  "displayName": "CoRA - Context Retrieval Aid",
+  "description": "RAG-based augmented-writing extension",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.109.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:markdown",
+    "onLanguage:tex",
+    "onLanguage:latex"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "cora.openPanel",
+        "title": "CoRA: Open Smart Context Panel"
+      }
+    ],
+    "configuration": {
+      "title": "CoRA - Context Retrieval Aid",
+      "properties": {
+        "cora.embeddingsModel": {
+          "type": "string",
+          "default": "bge-m3",
+          "markdownDescription": "Name of the local Ollama model to use for generating embeddings (e.g. `bge-m3`).\n\n⚠️ **WARNING**: Changing this value will automatically invalidate the project's vector cache, forcing a recalculation of embeddings for all documents."
+        },
+        "cora.ollamaPort": {
+          "type": "number",
+          "default": 11434,
+          "markdownDescription": "Local port on which the Ollama server is running (e.g. `11434`)."
+        },
+        "cora.filterTitles": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "If active, excludes headers/titles (lines starting with one or more `#`) from the suggested results in the Smart Context panel."
+        },
+        "cora.textconverterPath": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Absolute path to the TextConverter project root directory (e.g. C:\\path\\to\\TextConverter). If empty, document conversion will be disabled."
+        },
+        "cora.textconverterCodeParsing": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "If active, TextConverter will attempt to detect code blocks during conversion (recommended)."
+        },
+        "cora.textconverterExtractHtml": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "If active, TextConverter will apply main content extraction from HTML pages (removes header/footer/boilerplate)."
+        },
+        "cora.stripLinksAndImages": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "If active, strips all Markdown links (keeping only the link text) and removes all Markdown images from the converted source documents."
+        },
+        "cora.semanticScholarApiKey": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Optional API key for Semantic Scholar to prevent 'Too Many Requests' (429) rate limiting errors."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "compile": "webpack",
+    "watch": "webpack --watch",
+    "package": "webpack --mode production --devtool hidden-source-map",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "npm run compile-tests && npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "22.x",
+    "@types/vscode": "^1.109.0",
+    "@vscode/test-cli": "^0.0.12",
+    "@vscode/test-electron": "^2.5.2",
+    "eslint": "^9.39.2",
+    "ts-loader": "^9.5.4",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.54.0",
+    "webpack": "^5.104.1",
+    "webpack-cli": "^6.0.1"
+  },
+  "dependencies": {}
+}

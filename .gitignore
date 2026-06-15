@@ -1,0 +1,23 @@
+out
+dist
+node_modules
+.vscode-test/
+*.vsix
+
+# Local CoRA extension data and cache
+.cora/
+
+# Development test sources
+Sources/
+
+# Temporary and backup files
+*.bak
+*.backup
+*~
+
+# OS metadata files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log

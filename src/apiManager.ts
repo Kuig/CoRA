@@ -1,0 +1,162 @@
+import { logError, logWarning } from './logger';
+
+export interface AcademicPaper {
+    title: string;
+    abstract: string;
+    doi?: string;
+    url?: string;
+    source: 'arXiv' | 'Semantic Scholar' | 'DuckDuckGo';
+    year?: number;
+    citationCount?: number;
+}
+
+export class ApiManager {
+    /**
+     * Searches academic papers on arXiv.
+     */
+    public async searchArxiv(query: string, maxResults: number = 5): Promise<AcademicPaper[]> {
+        try {
+            const url = `http://export.arxiv.org/api/query?search_query=all:${encodeURIComponent(query)}&start=0&max_results=${maxResults}`;
+            const response = await fetch(url);
+            if (!response.ok) {
+                logWarning(`arXiv search returned status ${response.status}: ${response.statusText}`);
+                return [];
+            }
+            const text = await response.text();
+            
+            const entries = text.split('<entry>').slice(1);
+            return entries.map(entry => {
+                const titleMatch = entry.match(/<title>([\s\S]*?)<\/title>/);
+                const abstractMatch = entry.match(/<summary>([\s\S]*?)<\/summary>/);
+                const doiMatch = entry.match(/<arxiv:doi[^>]*>([\s\S]*?)<\/arxiv:doi>/);
+                const idMatch = entry.match(/<id>([\s\S]*?)<\/id>/);
+                const yearMatch = entry.match(/<published>(\d{4})-[^<]*<\/published>/);
+                
+                return {
+                    title: titleMatch ? titleMatch[1].replace(/\s+/g, ' ').trim() : 'Unknown Title',
+                    abstract: abstractMatch ? abstractMatch[1].replace(/\s+/g, ' ').trim() : '',
+                    doi: doiMatch ? doiMatch[1].trim() : undefined,
+                    url: idMatch ? idMatch[1].trim() : undefined,
+                    source: 'arXiv',
+                    year: yearMatch ? parseInt(yearMatch[1]) : undefined
+                };
+            });
+        } catch (e: any) {
+            logError(`arXiv search failed: ${e?.message || e}`);
+            return [];
+        }
+    }
+
+    /**
+     * Searches academic papers on Semantic Scholar.
+     */
+    public async searchSemanticScholar(query: string, maxResults: number = 5, apiKey?: string): Promise<AcademicPaper[]> {
+        try {
+            const url = `https://api.semanticscholar.org/graph/v1/paper/search?query=${encodeURIComponent(query)}&limit=${maxResults}&fields=title,abstract,externalIds,url,year,citationCount`;
+            
+            const headers: Record<string, string> = {};
+            if (apiKey) {
+                headers['x-api-key'] = apiKey;
+            }
+
+            const response = await fetch(url, { headers });
+            if (!response.ok) {
+                if (response.status === 429) {
+                    logWarning(`Semantic Scholar API returned 429 (Too Many Requests). Configure 'cora.semanticScholarApiKey' to avoid public rate limits.`);
+                } else {
+                    logWarning(`Semantic Scholar search returned status ${response.status}: ${response.statusText}`);
+                }
+                return [];
+            }
+            const data = await response.json() as any;
+            
+            if (!data || !data.data) {
+                return [];
+            }
+            
+            return data.data.map((paper: any) => ({
+                title: paper.title || 'Unknown Title',
+                abstract: paper.abstract || '',
+                doi: paper.externalIds?.DOI,
+                url: paper.url,
+                source: 'Semantic Scholar',
+                year: paper.year,
+                citationCount: paper.citationCount
+            }));
+        } catch (e: any) {
+            logError(`Semantic Scholar search failed: ${e?.message || e}`);
+            return [];
+        }
+    }
+
+    /**
+     * Searches academic papers or general web pages on DuckDuckGo using HTML scraping.
+     */
+    public async searchDuckDuckGo(query: string, maxResults: number = 5): Promise<AcademicPaper[]> {
+        try {
+            const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
+            const response = await fetch(url, {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                }
+            });
+            if (!response.ok) {
+                logWarning(`DuckDuckGo search returned status ${response.status}: ${response.statusText}`);
+                return [];
+            }
+            const html = await response.text();
+            
+            const results: AcademicPaper[] = [];
+            const resultBlockRegex = /<div class="result results_links results_links_deep web-result ">([\s\S]*?)<\/div>\s*<\/div>\s*<\/div>/g;
+            
+            let match;
+            while ((match = resultBlockRegex.exec(html)) !== null && results.length < maxResults) {
+                const blockContent = match[1];
+                
+                // Extract Title & Link
+                const linkTitleRegex = /<a[^>]+class="[^"]*result__a[^"]*"[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/;
+                const linkTitleMatch = linkTitleRegex.exec(blockContent);
+                if (!linkTitleMatch) {
+                    continue;
+                }
+                
+                const rawUrl = linkTitleMatch[1];
+                const title = linkTitleMatch[2].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+                
+                // Extract Snippet
+                const snippetRegex = /<a[^>]+class="[^"]*result__snippet[^"]*"[^>]*>([\s\S]*?)<\/a>/;
+                const snippetMatch = snippetRegex.exec(blockContent);
+                const snippet = snippetMatch ? snippetMatch[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim() : '';
+                
+                // Parse target URL from DuckDuckGo redirect link
+                let decodedUrl = rawUrl;
+                if (rawUrl.includes('uddg=')) {
+                    try {
+                        const params = new URLSearchParams(rawUrl.substring(rawUrl.indexOf('?')));
+                        const uddg = params.get('uddg');
+                        if (uddg) {
+                            decodedUrl = uddg;
+                        }
+                    } catch (e) {
+                        // fallback
+                    }
+                } else if (rawUrl.startsWith('//')) {
+                    decodedUrl = 'https:' + rawUrl;
+                }
+                
+                results.push({
+                    title,
+                    abstract: snippet,
+                    url: decodedUrl,
+                    source: 'DuckDuckGo'
+                });
+            }
+            
+            return results;
+        } catch (e: any) {
+            logError(`DuckDuckGo search failed: ${e?.message || e}`);
+            return [];
+        }
+    }
+}
+
