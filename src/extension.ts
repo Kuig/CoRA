@@ -483,11 +483,14 @@ async function checkForUpdates(context: vscode.ExtensionContext) {
 
         if (!response.ok) {
             logWarning(`GitHub update check returned status ${response.status}: ${response.statusText}`);
+            logIdle('Idle...', true);
             return;
         }
 
         const data = await response.json() as any;
         if (!data || !data.tag_name) {
+            logWarning('GitHub update check returned invalid release data.');
+            logIdle('Idle...', true);
             return;
         }
 
@@ -504,11 +507,14 @@ async function checkForUpdates(context: vscode.ExtensionContext) {
                     vscode.env.openExternal(vscode.Uri.parse(releaseUrl));
                 }
             });
+            logIdle('Idle...', true);
         } else {
             logSuccess(`CoRA is up to date (version ${currentVersion}).`);
+            logIdle('Idle...', true);
         }
     } catch (e: any) {
         logWarning(`Failed to check for CoRA updates: ${e?.message || e}`);
+        logIdle('Idle...', true);
     }
 }
 

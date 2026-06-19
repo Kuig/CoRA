@@ -82,7 +82,13 @@ export function logInfo(msg: string) { _log('info', msg); }
 export function logSave(msg: string) { _log('save', msg); }
 export function logAi(msg: string) { _log('ai', msg); }
 export function logMetric(msg: string) { _log('metric', msg); }
-export function logIdle(msg: string = 'Idle...') { _log('idle', msg); }
+export function logIdle(msg: string = 'Idle...', quiet: boolean = false) {
+    if (quiet) {
+        currentStatusText = `${LEVELS.idle.emoji} ${msg}`;
+    } else {
+        _log('idle', msg);
+    }
+}
 
 export function logSeparator() {
     if (outputChannel) {
