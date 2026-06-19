@@ -26,7 +26,7 @@ CoRA has an optional dependency called **TextConverter**. It is a lightweight py
 - **Autonomous Smart Context**: Write in your editor. CoRA will extract the context of the paragraph you are working on and suggest the most relevant texts from your reference documents.
 - **100% Local Privacy and RAG**: Works entirely offline thanks to integration with [Ollama](https://ollama.com/). Your documents never leave your computer.
 - **Smart Web Search**: Using an advanced algorithm based on **Maximum Marginal Relevance (MMR)**, CoRA extracts keywords from your text and allows you to query academic repositories (arXiv, Semantic Scholar) and the Web (DuckDuckGo).
-  - *Note: Semantic Scholar queries can hit rate limits; you can configure an API key in the settings to prevent 'Too Many Requests' (429) errors.*
+  - *Note: Semantic Scholar public API is limited to ~100 requests per 5-minute window. CoRA enforces a 1 request/second rate limit and retries automatically up to 3 times with exponential backoff on errors. Configure a free API key in the settings to get a more stable dedicated rate limit.*
   - DuckDuckGo results can be downloaded and converted directly to clean Markdown using **TextConverter**. If TextConverter is not available or fails, it falls back to saving a standard placeholder with the search snippet and URL.
   - Add search results as new local sources (generating a Markdown file) or cite the DOI directly.
 - **Citation Support (BibTeX)**: If a snippet (local or web) comes from a document that has a DOI identifier or a URL metadata header, you can click the **Cite** button to automatically generate the reference in your project's `.bib` file and insert `\cite{key}`. DOIs are resolved online via Crossref, whereas URLs generate an offline `@misc` BibTeX entry.
@@ -34,7 +34,7 @@ CoRA has an optional dependency called **TextConverter**. It is a lightweight py
 - **LaTeX Support**: `.tex` files in the `Sources` folder are parsed and vectorized directly by the RAG engine without external conversion.
 - **Optimized Workflow**:
   - Automatically activates when opening `.md`, `.tex`, or `.latex` files.
-  - Click a suggested snippet to: **copy it**, **insert it** directly at the editor cursor, or **open the original source file** to read the full context.
+  - Click a suggested snippet to: **copy it**, **insert it** directly at the editor cursor (formatted as a Markdown blockquote `>` with two preceding newlines, ready to annotate), or **open the original source file** to read the full context.
   - **Pin** system to lock crucial snippets at the top, and **Hide** system to obscure irrelevant ones.
 - **Real-Time Control Panel**:
   - **Similarity Threshold (10% - 90%)**: Instantly adjust via a slider how "strict" CoRA should be in filtering semantic matches.

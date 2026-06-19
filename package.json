@@ -3,7 +3,7 @@
   "publisher": "Kuig",
   "displayName": "CoRA - Context Retrieval Aid",
   "description": "RAG-based augmented-writing extension",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "engines": {
     "vscode": "^1.109.0"
   },
