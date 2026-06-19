@@ -206,8 +206,8 @@ export async function activate(context: vscode.ExtensionContext) {
                             }
                             content += `# ${data.title}\n\n${data.abstract}\n`;
                             await vscode.workspace.fs.writeFile(mdUri, Buffer.from(content, 'utf8'));
-                            logSuccess(`Added fallback web source document: ${safeTitle}.md`);
-                            vscode.window.showInformationMessage(`CoRA: Added fallback ${safeTitle}.md to Sources.`);
+                            logWarning(`Conversion failed (HTTP error or unreachable URL). Added fallback snippet for: ${safeTitle}.md`);
+                            vscode.window.showWarningMessage(`CoRA: Could not download the page (see Output for details). Added text snippet for "${data.title}" instead.`);
                         }
                     } else {
                         // Standard RAG sources (arXiv / Semantic Scholar)
