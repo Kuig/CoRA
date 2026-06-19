@@ -184,7 +184,7 @@ export class WebviewManager {
 
         if (editor) {
             editor.edit(editBuilder => {
-                editBuilder.insert(editor.selection.active, text);
+                editBuilder.insert(editor.selection.active, `\n\n> ${text}`);
             });
         } else {
             vscode.window.showErrorMessage('No active editor to insert text into.');
