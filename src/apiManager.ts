@@ -75,7 +75,9 @@ export class ApiManager {
 
                 const url = `https://api.semanticscholar.org/graph/v1/paper/search?query=${encodeURIComponent(query)}&limit=${maxResults}&fields=title,abstract,externalIds,url,year,citationCount`;
                 
-                const headers: Record<string, string> = {};
+                const headers: Record<string, string> = {
+                    'User-Agent': 'CoRA-VSCode-Extension (https://github.com/Kuig/CoRA)'
+                };
                 if (apiKey) {
                     headers['x-api-key'] = apiKey;
                 }
@@ -83,7 +85,11 @@ export class ApiManager {
                 const response = await fetch(url, { headers });
                 if (!response.ok) {
                     if (response.status === 429) {
-                        logWarning(`Semantic Scholar API returned 429 (Too Many Requests). Configure 'cora.semanticScholarApiKey' to avoid public rate limits.`);
+                        if (apiKey) {
+                            logWarning(`Semantic Scholar API returned 429 (Too Many Requests) even with API key. You may have exceeded the authenticated rate limit (1 req/s). The request will be retried with exponential backoff.`);
+                        } else {
+                            logWarning(`Semantic Scholar API returned 429 (Too Many Requests). Configure 'cora.semanticScholarApiKey' in VS Code settings to get a higher rate limit.`);
+                        }
                     } else {
                         logWarning(`Semantic Scholar search returned status ${response.status}: ${response.statusText}`);
                     }

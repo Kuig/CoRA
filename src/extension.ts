@@ -138,7 +138,7 @@ export async function activate(context: vscode.ExtensionContext) {
                     results.push(...arxivRes);
                 }
                 if (searchSettings.semanticScholar) {
-                    const apiKey = vscode.workspace.getConfiguration('cora').get<string>('semanticScholarApiKey') || '';
+                    const apiKey = vscode.workspace.getConfiguration('cora').get<string>('semanticScholarApiKey')?.trim() || undefined;
                     const ssRes = await apiManager.searchSemanticScholar(query, maxResults, apiKey);
                     results.push(...ssRes);
                 }
