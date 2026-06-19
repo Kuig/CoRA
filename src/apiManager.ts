@@ -47,46 +47,96 @@ export class ApiManager {
         }
     }
 
+    private _lastRequestTime = 0;
+    private _rateLimitQueue: Promise<any> = Promise.resolve();
+
+    private async _waitForRateLimit(): Promise<void> {
+        const now = Date.now();
+        const timeSinceLast = now - this._lastRequestTime;
+        const timeToWait = 1000 - timeSinceLast;
+        if (timeToWait > 0) {
+            await new Promise(resolve => setTimeout(resolve, timeToWait));
+        }
+        this._lastRequestTime = Date.now();
+    }
+
+    private async _fetchSemanticScholarWithRetry(
+        query: string,
+        maxResults: number,
+        apiKey?: string
+    ): Promise<AcademicPaper[]> {
+        const maxRetries = 3;
+        let attempt = 0;
+        let delay = 1000;
+
+        while (true) {
+            try {
+                await this._waitForRateLimit();
+
+                const url = `https://api.semanticscholar.org/graph/v1/paper/search?query=${encodeURIComponent(query)}&limit=${maxResults}&fields=title,abstract,externalIds,url,year,citationCount`;
+                
+                const headers: Record<string, string> = {};
+                if (apiKey) {
+                    headers['x-api-key'] = apiKey;
+                }
+
+                const response = await fetch(url, { headers });
+                if (!response.ok) {
+                    if (response.status === 429) {
+                        logWarning(`Semantic Scholar API returned 429 (Too Many Requests). Configure 'cora.semanticScholarApiKey' to avoid public rate limits.`);
+                    } else {
+                        logWarning(`Semantic Scholar search returned status ${response.status}: ${response.statusText}`);
+                    }
+                    throw new Error(`HTTP status ${response.status}`);
+                }
+                const data = await response.json() as any;
+                
+                if (!data || !data.data) {
+                    return [];
+                }
+                
+                return data.data.map((paper: any) => ({
+                    title: paper.title || 'Unknown Title',
+                    abstract: paper.abstract || '',
+                    doi: paper.externalIds?.DOI,
+                    url: paper.url,
+                    source: 'Semantic Scholar',
+                    year: paper.year,
+                    citationCount: paper.citationCount
+                }));
+            } catch (error: any) {
+                attempt++;
+                if (attempt > maxRetries) {
+                    logError(`Semantic Scholar search failed after ${maxRetries} retries: ${error?.message || error}`);
+                    throw error;
+                }
+                
+                logWarning(`Semantic Scholar search attempt ${attempt} failed: ${error?.message || error}. Retrying in ${delay}ms...`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+                delay *= 2; // Exponential backoff: 1000ms -> 2000ms -> 4000ms
+            }
+        }
+    }
+
     /**
      * Searches academic papers on Semantic Scholar.
      */
     public async searchSemanticScholar(query: string, maxResults: number = 5, apiKey?: string): Promise<AcademicPaper[]> {
-        try {
-            const url = `https://api.semanticscholar.org/graph/v1/paper/search?query=${encodeURIComponent(query)}&limit=${maxResults}&fields=title,abstract,externalIds,url,year,citationCount`;
-            
-            const headers: Record<string, string> = {};
-            if (apiKey) {
-                headers['x-api-key'] = apiKey;
-            }
-
-            const response = await fetch(url, { headers });
-            if (!response.ok) {
-                if (response.status === 429) {
-                    logWarning(`Semantic Scholar API returned 429 (Too Many Requests). Configure 'cora.semanticScholarApiKey' to avoid public rate limits.`);
-                } else {
-                    logWarning(`Semantic Scholar search returned status ${response.status}: ${response.statusText}`);
-                }
-                return [];
-            }
-            const data = await response.json() as any;
-            
-            if (!data || !data.data) {
-                return [];
-            }
-            
-            return data.data.map((paper: any) => ({
-                title: paper.title || 'Unknown Title',
-                abstract: paper.abstract || '',
-                doi: paper.externalIds?.DOI,
-                url: paper.url,
-                source: 'Semantic Scholar',
-                year: paper.year,
-                citationCount: paper.citationCount
-            }));
-        } catch (e: any) {
-            logError(`Semantic Scholar search failed: ${e?.message || e}`);
-            return [];
-        }
+        return new Promise<AcademicPaper[]>((resolve) => {
+            this._rateLimitQueue = this._rateLimitQueue
+                .then(async () => {
+                    try {
+                        const papers = await this._fetchSemanticScholarWithRetry(query, maxResults, apiKey);
+                        resolve(papers);
+                    } catch (e: any) {
+                        resolve([]);
+                    }
+                })
+                .catch((err) => {
+                    logError(`Queue error: ${err}`);
+                    resolve([]);
+                });
+        });
     }
 
     /**
