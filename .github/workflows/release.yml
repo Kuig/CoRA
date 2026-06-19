@@ -32,12 +32,12 @@ jobs:
       - name: Compile and Package Extension
         run: |
           npm run compile
-          npx @vscode/vsce package -o coreaid.vsix
+          npx @vscode/vsce package -o coreaid-${{ github.event.inputs.tag_name || github.ref_name }}.vsix
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          files: coreaid.vsix
+          files: coreaid-${{ github.event.inputs.tag_name || github.ref_name }}.vsix
           tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
